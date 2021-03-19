@@ -1,9 +1,7 @@
 import datetime
 import logging
-# create logger with 'spam_application'
 import os
 import sys
-import time
 
 import numpy as np
 import torch.nn.functional as F
@@ -88,7 +86,7 @@ class DeepQSnake:
         return torch.tensor(x)
 
     # TODO CHECK TENSORFLOW
-    def next_action(self, env: Snake):  # TODO CHECK THIS
+    def next_action(self, env: Snake):
         if random.random() <= self.e:
             return random.randint(0, len(ACTIONS) - 1)
 

@@ -24,8 +24,9 @@ if __name__ == '__main__':
     losses = np.array(list(data_generator(loss_path)))
     rewards = np.array(list(data_generator(rewards_path)))
 
-    losses = np.convolve(losses, np.ones(1000)) / 1000
-    rewards = np.convolve(rewards, np.ones(1000)) / 1000
+    w = 1000
+    losses = np.convolve(losses, np.ones(w)) / w
+    rewards = np.convolve(rewards, np.ones(w)) / w
 
     fig, axs = plt.subplots(2)
     axs[0].plot(losses, color='r')
