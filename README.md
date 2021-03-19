@@ -34,6 +34,7 @@ Learning rate is set to 5e-4.
 
 Loss (red) and average reward (blue) with running average over 1000 iterations after 140K episodes, playing 8 games 
 per episode.
+
 ![140k results](loss_reward_140k.png "results")
 
 Current best snake (`2021_03_19_16_57_139999` checkpoint)
