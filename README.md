@@ -43,6 +43,7 @@ per episode.
 ![140k results](loss_reward_140k.png "results")
 
 Current best snake (`2021_03_19_16_57_139999` checkpoint)
+
 ![](2021_03_19_16_57_139999.gif)
 
 
