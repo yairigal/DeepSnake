@@ -49,7 +49,7 @@ Current best snake (`2021_03_19_16_57_139999` checkpoint)
 
 ###### After 570K episodes (about 33 hours on my crappy CPU, about 200M steps played, 4.5M games played):
 
-![140k results](loss_rewards_570k.png "results")
+![570k results](loss_rewards_570K.png "results")
 
 ![570k checkpoint](570K_snake.gif)
 
