@@ -1,3 +1,4 @@
+import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,10 +22,15 @@ def data_generator(path):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--weight", default=10, type=int, help='running average window size')
+    args = parser.parse_args()
+
+
     losses = np.array(list(data_generator(loss_path)))
     rewards = np.array(list(data_generator(rewards_path)))
 
-    w = 10000
+    w = args.weight
     losses = np.convolve(losses, np.ones(w)) / w
     rewards = np.convolve(rewards, np.ones(w)) / w
 

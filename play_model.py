@@ -18,19 +18,17 @@ if __name__ == '__main__':
     model.eval()
 
     s = Snake(6, 6)
-    s.reset(food_amount=1)
     end = False
     cv2.namedWindow('snake', cv2.WINDOW_NORMAL)
     images = []
     while not end:
         action = model(DeepQSnake._x(s)).argmax()
-        end, r = s.step(action)
-        frame = s.frames_queue[-1]
-        frame = cv2.resize(frame, (500, 500), interpolation=cv2.INTER_NEAREST)
+        end= s.step(action)
+        frame = cv2.resize(s.board, (300, 300), interpolation=cv2.INTER_NEAREST)
         cv2.imshow('snake', frame)
         images.append(np.uint8(frame * 255))
         cv2.waitKey(100)
         print(ACTIONS[action])
-        print(f'r={r}, end={end}')
+        print(f'end={end}')
 
-    imageio.mimsave('570K_snake.gif', images)
+    imageio.mimsave('snake.gif', images)
