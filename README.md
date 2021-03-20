@@ -37,7 +37,7 @@ Learning rate is set to 5e-4.
 rewards were set to +1 for eating a food, -1 for game over and 0 for everything else. 
 
 
-### Results
+## Results
 Loss (red) and average reward (blue) with running average over 1000 iterations after 140K episodes, playing 8 games 
 per episode.
 
