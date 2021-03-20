@@ -14,6 +14,7 @@ from torch.nn import MSELoss
 from torch.optim import RMSprop
 import torch.nn.functional as F
 
+import snake
 from snake import Snake
 from snake import ACTIONS
 
@@ -81,7 +82,6 @@ class DeepQSnake:
         self.games = games_per_episode
         self.replays = deque([], self.max_replays)
         self.frames_played = 0
-        self.optimizer = RMSprop(self.network.parameters(), lr=self.LR)
         self.losses_file = open('data/loss', 'w')
         self.rewards_file = open('data/rewards', 'w')
 
@@ -90,12 +90,14 @@ class DeepQSnake:
             logger.debug(f'loaded model from {path_to_model}')
             self.network.load_state_dict(torch.load(path_to_model))
 
+        self.optimizer = RMSprop(self.network.parameters(), lr=self.LR)
+
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)
 
     @staticmethod
     def _x(env):
-        x = env.get_state()
+        x = env.last_frames
         h, w, c = x.shape
         x = x.reshape(1, c, h, w)
         x = np.double(x)
@@ -108,6 +110,26 @@ class DeepQSnake:
 
         return self.network(self._x(env)).argmax()
 
+    def reward(self, s: Snake, s_t: Snake):
+        """Calculate reward for that input transition.
+
+        Args:
+            s (Snake): current state.
+            s_t (Snake): next state.
+
+        Returns:
+            number. the reward for that phase.
+        """
+        if s_t.game_over and s_t.game_over != snake.FULL:
+            assert s.game_over != s_t.game_over
+            return -1
+
+        if s_t.score > s.score:
+            return 1
+
+        return 0
+
+
     def episode(self):
         env = Snake(*self.snake_shape)
         end = False
@@ -115,9 +137,11 @@ class DeepQSnake:
         while not end:
             a = self.next_action(env)
             s = deepcopy(env)
-            end, r = env.step(a)
+            end = env.step(a)
+            s_t = deepcopy(env)
+            r = self.reward(s, s_t)
             self.frames_played += 1
-            replay = Replay(s=s, s_t=deepcopy(env), r=r, a=a, end=end)
+            replay = Replay(s=s, s_t=s_t, r=r, a=a, end=end)
             self.replays.append(replay)
             total_rewards += r
 
@@ -194,8 +218,8 @@ class DeepQSnake:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load", default=None, description='path for old checkpoint to train from')
-    parser.add_argument("--config", default='config.json', description='path for config file')
+    parser.add_argument("--load", default=None, help='path for old checkpoint to train from')
+    parser.add_argument("--config", default='config.json', help='path for config file')
     args = parser.parse_args()
     with open(args.config, 'r') as c:
         config = json.load(c)
