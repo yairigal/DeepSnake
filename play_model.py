@@ -33,4 +33,4 @@ if __name__ == '__main__':
         print(ACTIONS[action])
         print(f'r={r}, end={end}')
 
-    imageio.mimsave('snake.gif', images)
+    imageio.mimsave('570K_snake.gif', images)

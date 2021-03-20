@@ -24,11 +24,16 @@ if __name__ == '__main__':
     losses = np.array(list(data_generator(loss_path)))
     rewards = np.array(list(data_generator(rewards_path)))
 
-    w = 1000
+    w = 10000
     losses = np.convolve(losses, np.ones(w)) / w
     rewards = np.convolve(rewards, np.ones(w)) / w
 
     fig, axs = plt.subplots(2)
+    fig.tight_layout(pad=3.0)
+    axs[0].set_xlabel('episodes')
+    axs[0].set_ylabel(f'loss')
     axs[0].plot(losses, color='r')
+    axs[1].set_xlabel('episodes')
+    axs[1].set_ylabel(f'rewards')
     axs[1].plot(rewards, color='b')
     plt.show()

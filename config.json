@@ -1,0 +1,12 @@
+{
+  "e": 1,
+  "e_decay": 0.97,
+  "e_min": 0.1,
+  "e_decay_frequency": 1000,
+  "batch_size": 64,
+  "max_replays": 200000,
+  "episodes": 1000000,
+  "gamma": 0.99,
+  "learning_rate": 0.0005,
+  "games_per_episodes": 8
+}

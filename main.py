@@ -1,11 +1,21 @@
-import datetime
-import logging
 import os
-import sys
+import json
+import random
+import logging
+import argparse
+import datetime
+from copy import deepcopy
+from collections import deque
+from collections import namedtuple
 
+import torch
 import numpy as np
+from torch.nn import MSELoss
+from torch.optim import RMSprop
 import torch.nn.functional as F
 
+from snake import Snake
+from snake import ACTIONS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -18,20 +28,7 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(ch)
 
-import random
-from collections import deque
-from collections import namedtuple
-from copy import deepcopy
-
-import torch
-from torch.nn import MSELoss
-from torch.optim import RMSprop
-
-from snake import ACTIONS
-from snake import Snake
-
 Replay = namedtuple('replay', ['s', 'a', 's_t', 'r', 'end'])
-
 
 class SnakeBrain(torch.nn.Module):
     def __init__(self):
@@ -52,30 +49,49 @@ class SnakeBrain(torch.nn.Module):
 
 # TODO two networks
 class DeepQSnake:
-    e = 1
-    e_decay = 0.97
-    e_min = 0.1
-    decay_frequency = 1000
-    batch_size = 64
-    max_replays = 200_000
-    episodes = 200_000 * 5
-    gamma = 0.99
-    LR = 0.0005
-
     save_path = 'checkpoints'
 
-    def __init__(self, h, w, path_to_model=None):
-        self.snake_shape = (h, w)
-        self.network = SnakeBrain().double()
-        if path_to_model is not None:
-            logger.debug(f'loaded model from {path_to_model}')
-            self.network.load_state_dict(torch.load(path_to_model))
-
+    def __init__(self,
+                 board_size,
+                 e=1,
+                 e_decay=.97,
+                 e_min=0.1,
+                 e_decay_frequency=1000,
+                 batch_size=64,
+                 max_replays=200_000,
+                 episodes=1_000_000,
+                 gamma=.99,
+                 learning_rate=0.0005,
+                 save_frequency=10000,
+                 print_frequency=1000,
+                 games_per_episode=8,
+                 path_to_model=None):
+        self.snake_shape = board_size
+        self.e = e
+        self.e_decay = e_decay
+        self.e_min = e_min
+        self.decay_frequency = e_decay_frequency
+        self.batch_size = batch_size
+        self.max_replays = max_replays
+        self.episodes = episodes
+        self.gamma = gamma
+        self.LR = learning_rate
+        self.save_frequency = save_frequency
+        self.print_frequency = print_frequency
+        self.games = games_per_episode
         self.replays = deque([], self.max_replays)
         self.frames_played = 0
         self.optimizer = RMSprop(self.network.parameters(), lr=self.LR)
         self.losses_file = open('data/loss', 'w')
         self.rewards_file = open('data/rewards', 'w')
+
+        self.network = SnakeBrain().double()
+        if path_to_model is not None:
+            logger.debug(f'loaded model from {path_to_model}')
+            self.network.load_state_dict(torch.load(path_to_model))
+
+        if not os.path.exists(self.save_path):
+            os.mkdir(self.save_path)
 
     @staticmethod
     def _x(env):
@@ -139,16 +155,11 @@ class DeepQSnake:
         return float(loss)
 
     def train(self):
-        print_frequency = 1000
-        save_frequency = 10000
-
-        games = 8
-
         total_rewards = 0
         last_avg = 0
         loss = None
         for ep in range(self.episodes):
-            total_rewards += sum(self.episode() for _ in range(games))
+            total_rewards += sum(self.episode() for _ in range(self.games))
 
             if (ep + 1) % self.decay_frequency == 0:
                 self.e = max(self.e * self.e_decay, self.e_min)
@@ -156,13 +167,13 @@ class DeepQSnake:
             if len(self.replays) >= self.batch_size:
                 loss = self._train()
                 self.losses_file.write(str(loss) + '\n')
-                self.rewards_file.write(str(total_rewards / games) + '\n')
+                self.rewards_file.write(str(total_rewards / self.games) + '\n')
                 self.losses_file.flush()
                 self.rewards_file.flush()
-                last_avg = total_rewards / games
+                last_avg = total_rewards / self.games
                 total_rewards = 0
 
-            if ep % print_frequency == 0:
+            if ep % self.print_frequency == 0:
                 logger.debug(f"\n"
                              f"    episode #{ep + 1}\n"
                              f"    frames played: {self.frames_played}\n"
@@ -171,9 +182,9 @@ class DeepQSnake:
                              f"    replays: {len(self.replays)}\n"
                              f"    e: {self.e}")
 
-            if (ep + 1) % save_frequency == 0:
+            if (ep + 1) % self.save_frequency == 0:
                 save_name = datetime.datetime.now().isoformat(sep='_', timespec='minutes').replace(":", "_") + "_" + \
-                            str(ep)
+                            str(ep + 1)
                 logger.debug(f"Saving model at {save_name}")
                 torch.save(self.network.state_dict(), os.path.join(self.save_path, save_name))
 
@@ -182,7 +193,11 @@ class DeepQSnake:
 
 
 if __name__ == '__main__':
-    p = None
-    if len(sys.argv) > 1:
-        p = sys.argv[1]
-    DeepQSnake(6, 6, path_to_model=p).train()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--load", default=None, description='path for old checkpoint to train from')
+    parser.add_argument("--config", default='config.json', description='path for config file')
+    args = parser.parse_args()
+    with open(args.config, 'r') as c:
+        config = json.load(c)
+
+    DeepQSnake((6, 6), path_to_model=args.load, **config).train()
